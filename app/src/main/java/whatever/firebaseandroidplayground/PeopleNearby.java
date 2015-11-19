@@ -38,7 +38,7 @@ public class PeopleNearby extends AppCompatActivity implements
 
         buildGoogleApiClient();
 
-        GeoFire geoFire = new GeoFire(new Firebase(Config.FIREBASE_LOCATION_TRACKING));
+        GeoFire geoFire = new GeoFire((new Firebase(Config.FIREBASE_LOCATION_TRACKING)).child("location"));
         //GeoFire geoFire = new GeoFire(new Firebase("https://publicdata-transit.firebaseio.com/_geofire"));
         geoQuery = geoFire.queryAtLocation(new GeoLocation(0, 0), 100);
         //GeoQuery geoQuery = geoFire.queryAtLocation(new GeoLocation(33.7, -118.3), 100);

@@ -1,20 +1,24 @@
 package whatever.firebaseandroidplayground;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.client.Firebase;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 
-public class MainActivity extends AppCompatActivity  implements
+public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     protected static String TAG = "###Main";
@@ -29,7 +33,6 @@ public class MainActivity extends AppCompatActivity  implements
     protected long timestamp;
 
     private TextView lastLocLat, lastLocLong, userIDTV;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +49,11 @@ public class MainActivity extends AppCompatActivity  implements
         sendLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                LocationSaver.saveLocation(MainActivity.this.mLastLocation, timestamp, userID);
+                if(mLastLocation == null) {
+                    Toast toast = Toast.makeText(getApplicationContext(), "not able to send location, permission granted?", Toast.LENGTH_LONG);
+                    toast.show();
+                }
+                LocationSaver.saveLocation(mLastLocation, timestamp, userID);
             }
         });
 
@@ -66,6 +73,12 @@ public class MainActivity extends AppCompatActivity  implements
         lastLocLong = (TextView) findViewById(R.id.lastLocLong);
         userIDTV = (TextView) findViewById(R.id.userID);
         userIDTV.setText("userID: "+userID);
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED){
+            Toast toast = Toast.makeText(this, "please grant location permission in settings!", Toast.LENGTH_LONG);
+            toast.show();
+        }
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -110,9 +123,6 @@ public class MainActivity extends AppCompatActivity  implements
             Log.d(TAG, "location couldn't be updated...");
             lastLocLat.setText("lat: unavailable");
             lastLocLong.setText("long: unavailable");
-            mLastLocation = new Location("");
-            mLastLocation.setLatitude(0);
-            mLastLocation.setLongitude(0);
         }
     }
 
@@ -122,7 +132,6 @@ public class MainActivity extends AppCompatActivity  implements
         // onConnectionFailed.
         Log.i(TAG, "Connection failed: ConnectionResult.getErrorCode() = " + result.getErrorCode());
     }
-
 
     @Override
     public void onConnectionSuspended(int cause) {
