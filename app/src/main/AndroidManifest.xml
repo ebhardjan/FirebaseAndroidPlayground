@@ -22,6 +22,12 @@
         </activity>
         <activity android:name=".PeopleNearby" >
         </activity>
+
+        <service
+            android:name=".LocationTrackerService"
+            android:enabled="true"
+            android:exported="true" >
+        </service>
     </application>
 
 </manifest>
