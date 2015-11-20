@@ -53,9 +53,7 @@ public class LocationTrackerService extends Service implements
     // last location sent to the firebase
     protected Location lastSentLocation;
 
-
     public LocationTrackerService() {}
-
 
     /**
      * Class for clients to access.  Because we know this service always
@@ -154,8 +152,6 @@ public class LocationTrackerService extends Service implements
         return log;
     }
 
-    // does things periodically
-
     /**
      * Task that gets executed periodically, currently does just nothing except showing the
      * notification...
@@ -185,26 +181,22 @@ public class LocationTrackerService extends Service implements
         if (lastLocation != null) {
             loggedLocation = lastLocation;
             if (lastSentLocation == null) {
-                sendLocation(loggedLocation);
+                checkInternetAndSend(loggedLocation);
             }
             else if (loggedLocation.distanceTo(lastSentLocation) > Config.LOCATION_TRACKER_SEND_DISTANCE_THRESHOLD) {
                 //send current position
-                sendLocation(loggedLocation);
+                checkInternetAndSend(loggedLocation);
             }
         }
     }
 
     /**
-     * Saves location in firebase
+     * checks if internet is available and either sends location or registers broadcast receiver
      */
-    private void sendLocation(Location loc){
+    private void checkInternetAndSend(Location loc){
         if(hasInternet()) {
             log("updating location in firebase...");
-            // save loc in firebase
-            Firebase firebaseRef = new Firebase(Config.FIREBASE_LOCATION_TRACKING);
-            GeoLocation gLoc = new GeoLocation(loc.getLatitude(), loc.getLongitude());
-            GeoFire geoFire = new GeoFire(firebaseRef);
-            geoFire.setLocation(userID, gLoc);
+            sendLocation(loc);
         }
         else {
             log("currently no internet connection, registering connectivity_change receiver");
@@ -216,22 +208,32 @@ public class LocationTrackerService extends Service implements
     }
 
     /**
+     * Saves location in firebase
+     */
+    private void sendLocation(Location loc){
+        Firebase firebaseRef = new Firebase(Config.FIREBASE_LOCATION_TRACKING);
+        GeoLocation gLoc = new GeoLocation(loc.getLatitude(), loc.getLongitude());
+        GeoFire geoFire = new GeoFire(firebaseRef);
+        geoFire.setLocation(userID, gLoc);
+        lastSentLocation = loc;
+    }
+
+    /**
      * Broadcast receiver for the internet connectivity event...
      */
     public class MyReceiver extends BroadcastReceiver {
         private Location loc;
-        public MyReceiver(Location log) {}
+        public MyReceiver(Location loc) {
+            this.loc = loc;
+        }
 
         @Override
         public void onReceive(Context context, Intent intent) {
             // This method is called when this BroadcastReceiver receives an Intent broadcast.
-            if(hasInternet())
-                log("internet available -> logging");
-                // save loc in firebase
-                Firebase firebaseRef = new Firebase(Config.FIREBASE_LOCATION_TRACKING);
-                GeoLocation gLoc = new GeoLocation(loc.getLatitude(), loc.getLongitude());
-                GeoFire geoFire = new GeoFire(firebaseRef);
-                geoFire.setLocation(userID, gLoc);
+            if(hasInternet()) {
+                log("internet available -> sending location now");
+                sendLocation(loc);
+            }
         }
     }
 
