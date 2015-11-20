@@ -184,11 +184,13 @@ public class LocationTrackerService extends Service implements
         Location loggedLocation;
         if (lastLocation != null) {
             loggedLocation = lastLocation;
-            if (lastSentLocation == null)
+            if (lastSentLocation == null) {
                 sendLocation(loggedLocation);
-            else if (loggedLocation.distanceTo(lastSentLocation) > Config.LOCATION_TRACKER_SEND_DISTANCE_TRESHOLD)
+            }
+            else if (loggedLocation.distanceTo(lastSentLocation) > Config.LOCATION_TRACKER_SEND_DISTANCE_THRESHOLD) {
                 //send current position
                 sendLocation(loggedLocation);
+            }
         }
     }
 

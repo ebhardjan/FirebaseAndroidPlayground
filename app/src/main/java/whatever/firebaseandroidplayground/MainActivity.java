@@ -10,8 +10,11 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     protected static String TAG = "###Main";
 
     protected TextView userIDTV;
+    protected ListView log;
 
     private LocationTrackerService mBoundService;
 
@@ -36,11 +40,7 @@ public class MainActivity extends AppCompatActivity {
             // service that we know is running in our own process, we can
             // cast its IBinder to a concrete class and directly access it.
             mBoundService = ((LocationTrackerService.LocalBinder)service).getService();
-            userIDTV.setText("userid: "+mBoundService.userID);
-
-            // Tell the user about this for our demo.
-            //Toast.makeText(Binding.this, R.string.local_service_connected,
-             //       Toast.LENGTH_SHORT).show();
+            userIDTV.setText("userID: "+mBoundService.userID);
         }
 
         public void onServiceDisconnected(ComponentName className) {
@@ -49,12 +49,10 @@ public class MainActivity extends AppCompatActivity {
             // Because it is running in our same process, we should never
             // see this happen.
             mBoundService = null;
-            //Toast.makeText(Binding.this, R.string.local_service_disconnected,
-            //        Toast.LENGTH_SHORT).show();
         }
     };
 
-    void doBindService() {
+    protected void doBindService() {
         // Establish a connection with the service.  We use an explicit
         // class name because we want a specific service implementation that
         // we know will be running in our own process (and thus won't be
@@ -63,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         isBound = true;
     }
 
-    void doUnbindService() {
+    protected void doUnbindService() {
         if (isBound) {
             // Detach our existing connection.
             unbindService(mConnection);
@@ -71,38 +69,45 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    protected void getLog(){
+        if(mBoundService != null){
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                    R.layout.simplerow,
+                    R.id.simplerow, mBoundService.getLog());
+            adapter.notifyDataSetChanged();
+            log.setAdapter(adapter);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         // set firebase android context
         Firebase.setAndroidContext(this);
 
-        Button nearby = (Button) findViewById(R.id.nearbyButton);
-        nearby.setOnClickListener(new View.OnClickListener() {
+        Button refresh = (Button) findViewById(R.id.refreshLog);
+        refresh.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(getApplicationContext(), PeopleNearby.class);
-                startActivity(i);
+                getLog();
             }
         });
 
         userIDTV = (TextView) findViewById(R.id.userID);
+        log = (ListView) findViewById(R.id.log);
 
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED){
             Toast toast = Toast.makeText(this, "please grant location permission in settings!", Toast.LENGTH_LONG);
             toast.show();
+            this.finish();
         }
-
-        service = new Intent(getApplicationContext(), LocationTrackerService.class);
-        startService(service);
-        doBindService();
-        //userIDTV.setText("userID?");
-        //userIDTV.setText("userID: "+mBoundService.userID);
+        else {
+            service = new Intent(getApplicationContext(), LocationTrackerService.class);
+            startService(service);
+        }
     }
 
     @Override

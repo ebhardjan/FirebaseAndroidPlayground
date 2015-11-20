@@ -12,5 +12,5 @@ public class Config {
 
     public static int LOCATION_UPDATE_PERIOD = 60*60*1000; //in ms -> maximum time between two location updates
     public static int LOCATION_UPDATE_PERIOD_MIN = 30*60*1000; //in ms -> we won't get more location updates than that
-    public static float LOCATION_TRACKER_SEND_DISTANCE_TRESHOLD = 1000; //in m
+    public static float LOCATION_TRACKER_SEND_DISTANCE_THRESHOLD = 1000; //in m
 }
