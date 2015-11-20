@@ -6,6 +6,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
+import android.location.LocationListener;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,6 +19,7 @@ import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 import java.text.SimpleDateFormat;
@@ -26,7 +28,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class LocationTrackerService extends Service implements
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
+        com.google.android.gms.location.LocationListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
 
     public String TAG = "###LocationTrackerService";
 
@@ -47,6 +49,7 @@ public class LocationTrackerService extends Service implements
 
 
     public LocationTrackerService() {}
+
 
     /**
      * Class for clients to access.  Because we know this service always
@@ -90,6 +93,14 @@ public class LocationTrackerService extends Service implements
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
+    }
+
+    protected LocationRequest createLocationRequest() {
+        LocationRequest mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(Config.LOCATION_UPDATE_PERIOD);
+        mLocationRequest.setFastestInterval(Config.LOCATION_UPDATE_PERIOD_MIN);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_NO_POWER);
+        return mLocationRequest;
     }
 
 
@@ -142,19 +153,35 @@ public class LocationTrackerService extends Service implements
      */
     @Override
     public void onConnected(Bundle connectionHint) {
-        Location tempLocation, loggedLocation;
-        tempLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        if (tempLocation != null) {
-            loggedLocation = tempLocation;
+        // request location updates
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                mGoogleApiClient, createLocationRequest(), this);
+        checkLocationAndUpdate(LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient));
+    }
+
+    /**
+     * Checks if the location is far enough away from the last one sent, and sends it in that case
+     * @param lastLocation
+     */
+    private void checkLocationAndUpdate(Location lastLocation) {
+        Log.d(TAG, "checking if updating location in firebase is needed");
+        Location loggedLocation;
+        if (lastLocation != null) {
+            loggedLocation = lastLocation;
             if (lastSentLocation == null)
                 sendLocation(loggedLocation);
-            else if (loggedLocation.distanceTo(lastSentLocation) > Config.LOCATION_TRACKER_SEND_DISTANCE_TRASHHOLD)
+            else if (loggedLocation.distanceTo(lastSentLocation) > Config.LOCATION_TRACKER_SEND_DISTANCE_TRESHHOLD)
                 //send current position
                 sendLocation(loggedLocation);
         }
     }
 
+    /**
+     * Saves location in firebase
+     * @param loc
+     */
     private void sendLocation(Location loc){
+        Log.d(TAG, "updating location in firebase...");
         Firebase firebaseRef = new Firebase(Config.FIREBASE_LOCATION_TRACKING);
         GeoLocation gLoc = new GeoLocation(loc.getLatitude(), loc.getLongitude());
         GeoFire geoFire = new GeoFire(firebaseRef);
@@ -187,4 +214,15 @@ public class LocationTrackerService extends Service implements
     public IBinder onBind(Intent intent) {
         return binder;
     }
+
+    /**
+     * LocationListener overrides-------------------------------------------------------------------
+     */
+    @Override
+    public void onLocationChanged(Location location) {
+        checkLocationAndUpdate(location);
+    }
+    /**
+     * ---------------------------------------------------------------------------------------------
+     */
 }

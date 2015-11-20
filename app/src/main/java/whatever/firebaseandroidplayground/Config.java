@@ -10,6 +10,7 @@ public class Config {
     public static String GCM_REGISTER = "https://save-my-ass.appspot.com/_ah/api/savemyass/v1/register";
     public static String GCM_START_ALARM = "https://save-my-ass.appspot.com/_ah/api/savemyass/v1/alarm";
 
-    public static int LOCATION_UPDATE_PERIOD = 60*60*1000; //in ms
-    public static float LOCATION_TRACKER_SEND_DISTANCE_TRASHHOLD = 1; //in km
+    public static int LOCATION_UPDATE_PERIOD = 30*60*1000; //in ms -> maximum time between two location updates
+    public static int LOCATION_UPDATE_PERIOD_MIN = 10*60*1000; //in ms -> we won't get more location updates than that
+    public static float LOCATION_TRACKER_SEND_DISTANCE_TRESHHOLD = 1000; //in m
 }
